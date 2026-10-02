@@ -1,3 +1,6 @@
+from datetime import date, datetime
+from fastapi import HTTPException
+from app.ai.scheduler import find_free_slots, book_slot
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -93,3 +96,26 @@ def list_audit(db: Session = Depends(get_db)):
         {"time": l.timestamp, "actor": l.actor, "action": l.action, "details": l.details}
         for l in logs
     ]
+
+class BookingIn(BaseModel):
+    patient_id: int
+    doctor: str
+    start_time: datetime
+
+
+@app.get("/slots")
+def get_slots(day: date, part: str = "any", db: Session = Depends(get_db)):
+    if part not in ("morning", "afternoon", "any"):
+        raise HTTPException(400, "part must be morning, afternoon or any")
+    return find_free_slots(db, day, part)
+
+
+@app.post("/appointments")
+def create_appointment(data: BookingIn, db: Session = Depends(get_db)):
+    try:
+        appt = book_slot(db, data.patient_id, data.doctor, data.start_time)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    log_action(db, "system", "appointment_booked",
+               f"Appointment id={appt.id}, patient={appt.patient_id}, {appt.doctor} at {appt.start_time}")
+    return {"id": appt.id, "doctor": appt.doctor, "start_time": appt.start_time}
