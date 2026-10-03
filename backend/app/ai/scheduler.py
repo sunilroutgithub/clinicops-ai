@@ -111,3 +111,14 @@ def parse_slot_request(message: str) -> dict:
     except Exception as e:
         return {"day": None, "part": "any", "confidence": 0.0,
                 "needs_review": True, "error": str(e)}
+
+def reschedule_appointment(db: Session, appointment_id: int, doctor: str, start_time: datetime):
+    """Book a new slot for the same patient, then cancel the old appointment."""
+    old = db.get(models.Appointment, appointment_id)
+    if not old or old.status != "scheduled":
+        raise ValueError("Appointment not found or not active")
+
+    new = book_slot(db, old.patient_id, doctor, start_time)  # raises if the new slot is invalid
+    old.status = "cancelled"
+    db.commit()
+    return old, new                

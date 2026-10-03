@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.ai.classifier import classify_message
-from app.ai.scheduler import find_free_slots, book_slot, parse_slot_request
+from app.ai.scheduler import find_free_slots, book_slot, parse_slot_request, reschedule_appointment
 from app.audit import log_action
 from app.database import Base, engine, get_db
 from app import models
@@ -37,6 +37,10 @@ class ProposeIn(BaseModel):
     patient_id: int
     message: str
 
+class RescheduleIn(BaseModel):
+    appointment_id: int
+    doctor: str
+    start_time: datetime
 
 @app.get("/")
 def health():
@@ -148,3 +152,15 @@ def propose_slots(data: ProposeIn, db: Session = Depends(get_db)):
     slots = find_free_slots(db, req["day"], req["part"])
     log_action(db, "system", "slots_proposed", f"{len(slots)} slots for {req['day']}")
     return {"status": "proposed", "day": req["day"], "part": req["part"], "slots": slots}
+
+@app.post("/reschedule")
+def reschedule(data: RescheduleIn, db: Session = Depends(get_db)):
+    try:
+        old, new = reschedule_appointment(db, data.appointment_id, data.doctor, data.start_time)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    log_action(db, "system", "appointment_rescheduled",
+               f"Appointment id={old.id} cancelled, new appointment id={new.id} "
+               f"with {new.doctor} at {new.start_time}")
+    return {"cancelled_id": old.id, "new_id": new.id,
+            "doctor": new.doctor, "start_time": new.start_time}    
