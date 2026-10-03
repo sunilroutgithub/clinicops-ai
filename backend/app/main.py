@@ -1,12 +1,12 @@
 from datetime import date, datetime
-from fastapi import HTTPException
-from app.ai.scheduler import find_free_slots, book_slot
-from fastapi import FastAPI, Depends
+
+from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.audit import log_action
 from app.ai.classifier import classify_message
+from app.ai.scheduler import find_free_slots, book_slot, parse_slot_request
+from app.audit import log_action
 from app.database import Base, engine, get_db
 from app import models
 
@@ -26,6 +26,18 @@ class MessageIn(BaseModel):
     body: str
 
 
+class BookingIn(BaseModel):
+    patient_id: int
+    doctor: str
+    start_time: datetime
+
+
+
+class ProposeIn(BaseModel):
+    patient_id: int
+    message: str
+
+
 @app.get("/")
 def health():
     return {"status": "ok", "app": "ClinicOps AI"}
@@ -33,7 +45,6 @@ def health():
 
 @app.post("/patients")
 def create_patient(data: PatientCreate, db: Session = Depends(get_db)):
-
     patient = models.Patient(**data.model_dump())
     db.add(patient)
     db.commit()
@@ -52,6 +63,7 @@ def list_patients(db: Session = Depends(get_db)):
 def receive_message(data: MessageIn, db: Session = Depends(get_db)):
     msg = models.Message(sender=data.sender, body=data.body)
     db.add(msg)
+
     db.commit()
     db.refresh(msg)
     log_action(db, "system", "message_received", f"Message id={msg.id} from {msg.sender}")
@@ -84,6 +96,7 @@ def list_messages(db: Session = Depends(get_db)):
     msgs = db.query(models.Message).order_by(models.Message.id.desc()).all()
     return [
         {"id": m.id, "sender": m.sender, "body": m.body,
+
          "category": m.category, "confidence": m.confidence, "status": m.status}
         for m in msgs
     ]
@@ -96,11 +109,6 @@ def list_audit(db: Session = Depends(get_db)):
         {"time": l.timestamp, "actor": l.actor, "action": l.action, "details": l.details}
         for l in logs
     ]
-
-class BookingIn(BaseModel):
-    patient_id: int
-    doctor: str
-    start_time: datetime
 
 
 @app.get("/slots")
@@ -119,3 +127,24 @@ def create_appointment(data: BookingIn, db: Session = Depends(get_db)):
     log_action(db, "system", "appointment_booked",
                f"Appointment id={appt.id}, patient={appt.patient_id}, {appt.doctor} at {appt.start_time}")
     return {"id": appt.id, "doctor": appt.doctor, "start_time": appt.start_time}
+
+
+
+@app.post("/propose-slots")
+def propose_slots(data: ProposeIn, db: Session = Depends(get_db)):
+    if not db.get(models.Patient, data.patient_id):
+        raise HTTPException(404, "Patient not found")
+
+    req = parse_slot_request(data.message)
+    log_action(db, "ai", "slot_request_parsed",
+               f"patient={data.patient_id}, day={req['day']}, part={req['part']}, "
+               f"confidence={req['confidence']}")
+
+    if req["needs_review"]:
+        log_action(db, "system", "sent_to_human_review",
+                   f"Unclear scheduling request from patient {data.patient_id}")
+        return {"status": "needs_review", "slots": []}
+
+    slots = find_free_slots(db, req["day"], req["part"])
+    log_action(db, "system", "slots_proposed", f"{len(slots)} slots for {req['day']}")
+    return {"status": "proposed", "day": req["day"], "part": req["part"], "slots": slots}
