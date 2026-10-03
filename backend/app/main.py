@@ -42,6 +42,11 @@ class RescheduleIn(BaseModel):
     doctor: str
     start_time: datetime
 
+class ReviewIn(BaseModel):
+    decision: str  # "approved" or "rejected"
+    note: str | None = None
+    reviewer: str = "staff"    
+
 @app.get("/")
 def health():
     return {"status": "ok", "app": "ClinicOps AI"}
@@ -163,4 +168,37 @@ def reschedule(data: RescheduleIn, db: Session = Depends(get_db)):
                f"Appointment id={old.id} cancelled, new appointment id={new.id} "
                f"with {new.doctor} at {new.start_time}")
     return {"cancelled_id": old.id, "new_id": new.id,
-            "doctor": new.doctor, "start_time": new.start_time}    
+            "doctor": new.doctor, "start_time": new.start_time}   
+
+
+@app.get("/review")
+def review_queue(db: Session = Depends(get_db)):
+    msgs = (
+        db.query(models.Message)
+        .filter(models.Message.status == "needs_review")
+        .order_by(models.Message.id)
+        .all()
+    )
+    return [
+        {"id": m.id, "sender": m.sender, "body": m.body,
+         "category": m.category, "confidence": m.confidence}
+        for m in msgs
+    ]
+
+
+@app.post("/review/{message_id}")
+def review_message(message_id: int, data: ReviewIn, db: Session = Depends(get_db)):
+    if data.decision not in ("approved", "rejected"):
+        raise HTTPException(400, "decision must be approved or rejected")
+
+    msg = db.get(models.Message, message_id)
+    if not msg:
+        raise HTTPException(404, "Message not found")
+    if msg.status != "needs_review":
+        raise HTTPException(400, "Message is not waiting for review")
+
+    msg.status = data.decision
+    db.commit()
+    log_action(db, "human", f"review_{data.decision}",
+               f"Message id={msg.id} by {data.reviewer}. Note: {data.note or '-'}")
+    return {"id": msg.id, "status": msg.status}
