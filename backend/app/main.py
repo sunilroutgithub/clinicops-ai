@@ -1,6 +1,6 @@
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from app.ai.extractor import extract_document
 from datetime import date, datetime
-
-from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -202,3 +202,44 @@ def review_message(message_id: int, data: ReviewIn, db: Session = Depends(get_db
     log_action(db, "human", f"review_{data.decision}",
                f"Message id={msg.id} by {data.reviewer}. Note: {data.note or '-'}")
     return {"id": msg.id, "status": msg.status}
+
+
+@app.post("/documents")
+async def upload_document(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(400, "Only PDF files are accepted")
+    pdf_bytes = await file.read()
+    if len(pdf_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(400, "File too large (max 5 MB)")
+
+    result = extract_document(pdf_bytes)
+    doc = models.ExtractedDocument(
+        filename=file.filename,
+        patient_name=result["patient_name"],
+        insurance_provider=result["insurance_provider"],
+        policy_number=result["policy_number"],
+        referral_date=result["referral_date"],
+        doctor=result["doctor"],
+        confidence=result["confidence"],
+        status="needs_review" if result["needs_review"] else "done",
+    )
+    db.add(doc)
+    db.commit()
+    db.refresh(doc)
+
+    log_action(db, "ai", "document_extracted",
+               f"Document id={doc.id} ({doc.filename}), confidence={doc.confidence}")
+    if result["needs_review"]:
+        log_action(db, "system", "sent_to_human_review", f"Document id={doc.id}")
+
+    return {"id": doc.id, "patient_name": doc.patient_name,
+            "insurance_provider": doc.insurance_provider,
+            "policy_number": doc.policy_number, "referral_date": doc.referral_date,
+            "doctor": doc.doctor, "confidence": doc.confidence, "status": doc.status}
+
+
+@app.get("/documents")
+def list_documents(db: Session = Depends(get_db)):
+    docs = db.query(models.ExtractedDocument).order_by(models.ExtractedDocument.id.desc()).all()
+    return [{"id": d.id, "filename": d.filename, "patient_name": d.patient_name,
+             "policy_number": d.policy_number, "status": d.status} for d in docs]    

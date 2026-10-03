@@ -54,3 +54,18 @@ class AuditLog(Base):
     actor: Mapped[str] = mapped_column(String(50))   # "ai", "human", "system"
     action: Mapped[str] = mapped_column(String(100))
     details: Mapped[str | None] = mapped_column(Text, default=None)
+
+
+class ExtractedDocument(Base):
+    __tablename__ = "extracted_documents"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    filename: Mapped[str] = mapped_column(String(200))
+    patient_name: Mapped[str | None] = mapped_column(String(100), default=None)
+    insurance_provider: Mapped[str | None] = mapped_column(String(100), default=None)
+    policy_number: Mapped[str | None] = mapped_column(String(50), default=None)
+    referral_date: Mapped[str | None] = mapped_column(String(20), default=None)
+    doctor: Mapped[str | None] = mapped_column(String(100), default=None)
+    confidence: Mapped[float | None] = mapped_column(Float, default=None)
+    status: Mapped[str] = mapped_column(String(20), default="done")  # done / needs_review
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)    
