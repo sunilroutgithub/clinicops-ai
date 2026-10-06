@@ -55,6 +55,19 @@ cd backend
 python -m pytest tests -v
 ```
 
+## Evaluation
+
+Classifier tested on 28 synthetic messages (4 per category, 7 categories) using `gemini-3.5-flash-lite`:
+
+- Accuracy: 28/28
+- Emergencies (4/4) were correctly classified and routed to human review
+- Caveat: small, clean, synthetic set. Real messages will be messier, so a larger set is planned.
+
+Run it yourself: `cd backend && python eval_classifier.py` (results are cached, so it resumes after a quota stop).
+
+Note: free-tier API limits are tight (about 20 requests/day on one model when tested), so API errors are treated as "send to human review" rather than guessed.
+
+
 ## Roadmap
 
 - Frontend dashboard for the review queue

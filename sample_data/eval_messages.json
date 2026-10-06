@@ -1,0 +1,37 @@
+[
+  {"body": "Can I move my appointment to Friday morning?", "expected": "appointment"},
+  {"body": "I need to cancel my visit next Tuesday.", "expected": "appointment"},
+  {"body": "Do you have any openings this week for a checkup?", "expected": "appointment"},
+  {"body": "Please book me in to see Dr. Rao on the 15th.", "expected": "appointment"},
+
+  {"body": "I was charged twice for my last visit.", "expected": "billing"},
+  {"body": "Can you send me an invoice for my consultation?", "expected": "billing"},
+  {"body": "I want to pay my outstanding balance, how do I do that?", "expected": "billing"},
+  {"body": "The amount on my bill looks wrong.", "expected": "billing"},
+
+  {"body": "Does my policy cover physiotherapy?", "expected": "insurance"},
+  {"body": "I changed insurers, please update my policy number.", "expected": "insurance"},
+  {"body": "My claim was rejected, what should I do?", "expected": "insurance"},
+  {"body": "Please send my coverage documents to my new insurance company.", "expected": "insurance"},
+
+  {"body": "My GP wants to refer me to a cardiologist, can you arrange it?", "expected": "referral"},
+  {"body": "Has the referral letter to the dermatologist been sent?", "expected": "referral"},
+  {"body": "I need a referral to a physiotherapist.", "expected": "referral"},
+  {"body": "Dr. Mehta referred me, here is my referral number.", "expected": "referral"},
+
+  {"body": "I need a refill of my blood pressure tablets.", "expected": "prescription"},
+  {"body": "Can you renew my prescription before the weekend?", "expected": "prescription"},
+  {"body": "My pharmacy says my prescription has expired.", "expected": "prescription"},
+  {"body": "Please send a repeat prescription to my pharmacy.", "expected": "prescription"},
+
+  {"body": "What are your opening hours on Saturdays?", "expected": "patient_question"},
+  {"body": "Is there parking available at the clinic?", "expected": "patient_question"},
+  {"body": "Do I need to fast before my blood test?", "expected": "patient_question"},
+  {"body": "Where can I find your clinic's address?", "expected": "patient_question"},
+
+  {"body": "I have severe chest pain and trouble breathing.", "expected": "emergency"},
+
+  {"body": "My father collapsed and is not responding.", "expected": "emergency"},
+  {"body": "I feel like I want to end my life.", "expected": "emergency"},
+  {"body": "Sudden severe headache and I can't see properly.", "expected": "emergency"}
+]
