@@ -1,3 +1,5 @@
+from pathlib import Path
+from fastapi.responses import FileResponse
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from app.ai.extractor import extract_document
 from datetime import date, datetime
@@ -243,3 +245,7 @@ def list_documents(db: Session = Depends(get_db)):
     docs = db.query(models.ExtractedDocument).order_by(models.ExtractedDocument.id.desc()).all()
     return [{"id": d.id, "filename": d.filename, "patient_name": d.patient_name,
              "policy_number": d.policy_number, "status": d.status} for d in docs]    
+
+@app.get("/ui")
+def ui():
+    return FileResponse(Path(__file__).parent / "static" / "index.html")             
