@@ -68,6 +68,13 @@ Run it yourself: `cd backend && python eval_classifier.py` (results are cached, 
 Note: free-tier API limits are tight (about 20 requests/day on one model when tested), so API errors are treated as "send to human review" rather than guessed.
 
 
+### Harder set (15 messages: typos, two requests in one, vague wording)
+
+- Accuracy: 14/15
+- Emergencies: 3/3 caught and routed to a human
+- The one miss was over-escalation: "I feel a bit dizzy since this morning" was classified as emergency instead of patient question. The system errs on the side of human review for symptoms, which is the intended safety behavior.
+- Still small and synthetic, so treat these as a sanity check, not an accuracy guarantee.
+
 ## Roadmap
 
 - Frontend dashboard for the review queue

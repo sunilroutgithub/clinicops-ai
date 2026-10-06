@@ -1,0 +1,17 @@
+[
+  {"body": "i need to reschedul my apointment, also can u check my bill", "expected": "appointment"},
+  {"body": "Can I get a refill and also book a visit next week?", "expected": "prescription"},
+  {"body": "my insurance wont cover the visit, can I pay myself", "expected": "billing"},
+  {"body": "Hi, Dr. Rao said I should see a specialist. Who do I call?", "expected": "referral"},
+  {"body": "Is the clinic open tomorrow?", "expected": "patient_question"},
+  {"body": "I feel a bit dizzy since this morning, should I come in?", "expected": "patient_question"},
+  {"body": "My chest feels tight when I walk upstairs, can I get an appointment today?", "expected": "emergency"},
+  {"body": "Thanks for the help last time!", "expected": "patient_question"},
+  {"body": "my kid swallowed something and is coughing a lot", "expected": "emergency"},
+  {"body": "Please change the name on my policy to my married name.", "expected": "insurance"},
+  {"body": "Need my tablets again, running out Friday", "expected": "prescription"},
+  {"body": "Was I charged for the missed appointment?", "expected": "billing"},
+  {"body": "can't breathe properly, wheezing badly", "expected": "emergency"},
+  {"body": "Cancel everything, I'm moving abroad.", "expected": "appointment"},
+  {"body": "What does my referral to the cardiologist cost?", "expected": "billing"}
+]

@@ -6,3 +6,4 @@ __pycache__/
 *.db
 backend/eval_results.json
 .pytest_cache/
+backend/eval_hard_results.json
