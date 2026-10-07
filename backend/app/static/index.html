@@ -25,7 +25,14 @@
 <body>
   <h1>ClinicOps AI</h1>
   <div class="sub">Review queue: items the AI was not sure about, and all emergencies. Synthetic data only.</div>
+
+  <h2>Messages to review</h2>
   <div id="queue"></div>
+
+  <h2>Documents to review</h2>
+
+  <div id="docqueue"></div>
+
   <h2>Recent audit log</h2>
   <div id="audit"></div>
 
@@ -57,9 +64,52 @@ async function loadQueue() {
     </div>`).join("");
 }
 
+
 async function decide(id, decision) {
   const note = document.getElementById("note-" + id).value;
   const res = await fetch("/review/" + id, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ decision, note, reviewer: "staff" })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    alert("Error: " + (err.detail || res.status));
+  }
+  refresh();
+}
+
+async function loadDocs() {
+  const res = await fetch("/review/documents");
+  const docs = await res.json();
+  const box = document.getElementById("docqueue");
+  if (!docs.length) {
+    box.innerHTML = '<div class="card empty">No documents waiting for review.</div>';
+    return;
+  }
+  box.innerHTML = docs.map(d => `
+    <div class="card">
+      <div class="meta">
+        <span class="tag">document</span>
+        confidence ${esc(d.confidence)} &middot; ${esc(d.filename)} &middot; #${esc(d.id)}
+      </div>
+      <div class="body">
+        Patient: ${esc(d.patient_name || "(missing)")}<br>
+        Insurer: ${esc(d.insurance_provider || "(missing)")}<br>
+
+        Policy: ${esc(d.policy_number || "(missing)")}<br>
+        Referral date: ${esc(d.referral_date || "(missing)")}<br>
+        Doctor: ${esc(d.doctor || "(missing)")}
+      </div>
+      <input id="docnote-${d.id}" placeholder="Note (what did you check?)">
+      <button class="approve" onclick="decideDoc(${d.id}, 'approved')">Approve</button>
+      <button class="reject" onclick="decideDoc(${d.id}, 'rejected')">Reject</button>
+    </div>`).join("");
+}
+
+async function decideDoc(id, decision) {
+  const note = document.getElementById("docnote-" + id).value;
+  const res = await fetch("/review/documents/" + id, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ decision, note, reviewer: "staff" })
@@ -79,7 +129,8 @@ async function loadAudit() {
   ).join("");
 }
 
-function refresh() { loadQueue(); loadAudit(); }
+
+function refresh() { loadQueue(); loadDocs(); loadAudit(); }
 refresh();
 </script>
 </body>

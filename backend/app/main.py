@@ -191,7 +191,7 @@ def propose_slots(data: ProposeIn, db: Session = Depends(get_db)):
     log_action(db, "system", "slots_proposed", f"{len(slots)} slots for {req['day']}")
     return {"status": "proposed", "day": req["day"], "part": req["part"], "slots": slots}
 
-    
+
 @app.post("/reschedule")
 def reschedule(data: RescheduleIn, db: Session = Depends(get_db)):
     try:
@@ -280,4 +280,36 @@ def list_documents(db: Session = Depends(get_db)):
 
 @app.get("/ui")
 def ui():
-    return FileResponse(Path(__file__).parent / "static" / "index.html")             
+    return FileResponse(Path(__file__).parent / "static" / "index.html") 
+
+@app.get("/review/documents")
+def document_review_queue(db: Session = Depends(get_db)):
+    docs = (
+        db.query(models.ExtractedDocument)
+        .filter(models.ExtractedDocument.status == "needs_review")
+        .order_by(models.ExtractedDocument.id)
+        .all()
+    )
+    return [
+        {"id": d.id, "filename": d.filename, "patient_name": d.patient_name,
+         "insurance_provider": d.insurance_provider, "policy_number": d.policy_number,
+         "referral_date": d.referral_date, "doctor": d.doctor, "confidence": d.confidence}
+        for d in docs
+    ]
+
+
+@app.post("/review/documents/{doc_id}")
+def review_document(doc_id: int, data: ReviewIn, db: Session = Depends(get_db)):
+    if data.decision not in ("approved", "rejected"):
+        raise HTTPException(400, "decision must be approved or rejected")
+    doc = db.get(models.ExtractedDocument, doc_id)
+    if not doc:
+        raise HTTPException(404, "Document not found")
+    if doc.status != "needs_review":
+        raise HTTPException(400, "Document is not waiting for review")
+
+    doc.status = data.decision
+    db.commit()
+    log_action(db, "human", f"document_review_{data.decision}",
+               f"Document id={doc.id} by {data.reviewer}. Note: {data.note or '-'}")
+    return {"id": doc.id, "status": doc.status}                
