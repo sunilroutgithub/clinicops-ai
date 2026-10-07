@@ -141,9 +141,30 @@ def create_appointment(data: BookingIn, db: Session = Depends(get_db)):
 
 
 
+# @app.post("/propose-slots")
+# def propose_slots(data: ProposeIn, db: Session = Depends(get_db)):
+#     if not db.get(models.Patient, data.patient_id):
+#         raise HTTPException(404, "Patient not found")
+
+#     req = parse_slot_request(data.message)
+#     log_action(db, "ai", "slot_request_parsed",
+#                f"patient={data.patient_id}, day={req['day']}, part={req['part']}, "
+#                f"confidence={req['confidence']}")
+
+#     if req["needs_review"]:
+#         log_action(db, "system", "sent_to_human_review",
+#                    f"Unclear scheduling request from patient {data.patient_id}")
+#         return {"status": "needs_review", "slots": []}
+
+#     slots = find_free_slots(db, req["day"], req["part"])
+#     log_action(db, "system", "slots_proposed", f"{len(slots)} slots for {req['day']}")
+#     return {"status": "proposed", "day": req["day"], "part": req["part"], "slots": slots}
+
+
 @app.post("/propose-slots")
 def propose_slots(data: ProposeIn, db: Session = Depends(get_db)):
-    if not db.get(models.Patient, data.patient_id):
+    patient = db.get(models.Patient, data.patient_id)
+    if not patient:
         raise HTTPException(404, "Patient not found")
 
     req = parse_slot_request(data.message)
@@ -152,14 +173,25 @@ def propose_slots(data: ProposeIn, db: Session = Depends(get_db)):
                f"confidence={req['confidence']}")
 
     if req["needs_review"]:
+        msg = models.Message(
+            sender=patient.email,
+            body=data.message,
+            category="appointment",
+            confidence=req["confidence"],
+            status="needs_review",
+        )
+        db.add(msg)
+        db.commit()
+        db.refresh(msg)
         log_action(db, "system", "sent_to_human_review",
-                   f"Unclear scheduling request from patient {data.patient_id}")
-        return {"status": "needs_review", "slots": []}
+                   f"Unclear scheduling request from patient {data.patient_id}, message id={msg.id}")
+        return {"status": "needs_review", "message_id": msg.id, "slots": []}
 
     slots = find_free_slots(db, req["day"], req["part"])
     log_action(db, "system", "slots_proposed", f"{len(slots)} slots for {req['day']}")
     return {"status": "proposed", "day": req["day"], "part": req["part"], "slots": slots}
 
+    
 @app.post("/reschedule")
 def reschedule(data: RescheduleIn, db: Session = Depends(get_db)):
     try:
