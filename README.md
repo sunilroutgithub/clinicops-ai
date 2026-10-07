@@ -81,3 +81,12 @@ Note: free-tier API limits are tight (about 20 requests/day on one model when te
 - Email inbox integration
 - Evaluation set to measure classifier accuracy
 - Deployment
+
+
+## Screenshot
+
+Review queue (synthetic data):
+
+![Review queue](docs/ui-review-queue.png)
+
+Open it at `/ui` while the server is running.
