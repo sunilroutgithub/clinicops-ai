@@ -14,7 +14,7 @@ Open it at `/ui` while the server is running.
 
 ## Live demo
 
-https://YOUR-RENDER-URL.onrender.com/ui
+https://clinicops-ai.onrender.com/ui
 
 - Protected by a login. Contact me for the demo password.
 - Hosted on Render's free tier, so the first visit after idle can take up to a minute.
