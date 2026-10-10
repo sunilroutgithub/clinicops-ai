@@ -12,6 +12,15 @@ Review queue (synthetic data):
 
 Open it at `/ui` while the server is running.
 
+## Live demo
+
+https://YOUR-RENDER-URL.onrender.com/ui
+
+- Protected by a login. Contact me for the demo password.
+- Hosted on Render's free tier, so the first visit after idle can take up to a minute.
+- Uses fake demo data only. Data resets when the service restarts.
+- AI requests are capped per day to stay within the free Gemini quota, so AI features may be unavailable late in the day.
+
 ## What it does
 
 - **AI inbox:** classifies messages (appointment, billing, insurance, referral, prescription, question, emergency)
@@ -96,16 +105,15 @@ Note: free-tier API limits are tight (about 20 requests/day on one model when te
 
 ## Limitations
 
-
-- No login yet: anyone with access to the server can use the review page
+- Single shared login, no individual accounts
 - Messages arrive through the API only (no email, SMS or voice yet)
-- SQLite database, single clinic, no real calendar integration
+- SQLite database on a free host, so data resets when the service restarts
+- Single clinic, no real calendar integration
 - Not a full tool-calling agent: the code decides the next step, the AI classifies, extracts and parses
 
 ## Roadmap
 
-- Password protection and a request limit (needed before going public)
-- Free deployment (Render)
 - Email inbox integration
 - Tool-calling agent that chooses its own actions
 - Postgres, Docker, GitHub Actions CI
+- Individual user accounts
