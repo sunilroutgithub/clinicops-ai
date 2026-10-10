@@ -6,6 +6,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.seed import seed_demo_data
+
 from app.ai.classifier import classify_message
 from app.ai.extractor import extract_document
 from app.ai.scheduler import find_free_slots, book_slot, parse_slot_request, reschedule_appointment
@@ -16,6 +18,7 @@ from app.limits import check_ai_budget
 from app import models
 
 Base.metadata.create_all(bind=engine)
+seed_demo_data()
 
 app = FastAPI(title="ClinicOps AI", dependencies=[Depends(require_login)])
 
