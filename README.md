@@ -1,5 +1,7 @@
 # ClinicOps AI
 
+![tests](https://github.com/sunilroutgithub/clinicops-ai/actions/workflows/tests.yml/badge.svg)
+
 An AI assistant that removes administrative work for small clinics: it sorts incoming messages, proposes appointment slots, extracts data from insurance documents, and sends anything uncertain to a human. It does not diagnose or give medical advice.
 
 **Uses synthetic data only. Not HIPAA-compliant. Do not use with real patient data.**
